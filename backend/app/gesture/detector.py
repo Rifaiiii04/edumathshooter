@@ -1,6 +1,6 @@
 import cv2
 import mediapipe as mp
-from gesture.rules import GestureRules
+from app.gesture.rules import GestureRules
 
 mp_hands = mp.solutions.hands
 
