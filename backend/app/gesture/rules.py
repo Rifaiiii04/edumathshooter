@@ -1,12 +1,17 @@
 import time
 
-BEND_TOL = 0.005
-SHOOT_COOLDOWN = 0.5
-
 class GestureRules:
     def __init__(self):
+        # === CONFIG ===
+        self.BEND_TOL = 0.005
+        self.SHOOT_COOLDOWN = 0.5
+
+        # === STATE ===
         self.prev_wrist_y = None
         self.last_shoot_time = 0
+
+    def reset(self):
+        self.prev_wrist_y = None
 
     def is_armed(self, lm):
         index_tip, index_mid = lm[8], lm[6]
@@ -15,9 +20,9 @@ class GestureRules:
         pinky_tip, pinky_mid = lm[20], lm[18]
 
         index_straight = index_tip.y < index_mid.y
-        middle_bent = (middle_tip.y - middle_mid.y) > BEND_TOL
-        ring_bent = (ring_tip.y - ring_mid.y) > BEND_TOL
-        pinky_bent = (pinky_tip.y - pinky_mid.y) > BEND_TOL
+        middle_bent = (middle_tip.y - middle_mid.y) > self.BEND_TOL
+        ring_bent = (ring_tip.y - ring_mid.y) > self.BEND_TOL
+        pinky_bent = (pinky_tip.y - pinky_mid.y) > self.BEND_TOL
 
         return index_straight and middle_bent and ring_bent and pinky_bent
 
@@ -28,7 +33,6 @@ class GestureRules:
 
         palm_z = (wrist.z + index_mcp.z + pinky_mcp.z) / 3
         now = time.time()
-        shoot = False
 
         if self.prev_wrist_y is not None:
             delta_y = self.prev_wrist_y - wrist.y
@@ -36,13 +40,11 @@ class GestureRules:
             if (
                 delta_y > 0.003
                 and palm_z < -0.005
-                and now - self.last_shoot_time > SHOOT_COOLDOWN
+                and now - self.last_shoot_time > self.SHOOT_COOLDOWN
             ):
-                shoot = True
                 self.last_shoot_time = now
+                self.prev_wrist_y = wrist.y
+                return True
 
         self.prev_wrist_y = wrist.y
-        return shoot
-
-    def reset(self):
-        self.prev_wrist_y = None
+        return False

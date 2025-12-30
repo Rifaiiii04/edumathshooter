@@ -1,26 +1,44 @@
 import asyncio
 import json
 import websockets
-from gesture.detector import GestureDetector
+from app.gesture.detector import GestureDetector
 
 detector = GestureDetector()
+is_running = False
 
 async def handler(websocket):
-    print("🧠 Client connected")
+    global is_running
+    print("Client connected")
 
     try:
         while True:
-            data = detector.read()
-            if data:
-                await websocket.send(json.dumps(data))
-            await asyncio.sleep(1 / 60)  # 60 FPS
-    except websockets.ConnectionClosed:
-        print("🔌 Client disconnected")
+            try:
+                message = await asyncio.wait_for(websocket.recv(), timeout=0.01)
+                try:
+                    data = json.loads(message)
 
-async def main():
-    async with websockets.serve(handler, "0.0.0.0", 8765):
-        print("🚀 WebSocket running on ws://localhost:8765")
-        await asyncio.Future()
+                    if data.get("type") == "CONTROL":
+                        if data.get("action") == "START":
+                            is_running = True
+                            print("GAME STARTED")
+                        elif data.get("action") == "PAUSE":
+                            is_running = False
+                            print("GAME PAUSED")
+                except json.JSONDecodeError:
+                    print(f"Invalid JSON received: {message}")
 
-if __name__ == "__main__":
-    asyncio.run(main())
+            except asyncio.TimeoutError:
+                pass
+
+            if is_running:
+                try:
+                    gesture = detector.read()
+                    if gesture:
+                        await websocket.send(json.dumps(gesture))
+                except Exception as e:
+                    print(f"Error reading gesture: {e}")
+
+    except websockets.exceptions.ConnectionClosed:
+        print("Client disconnected")
+    except Exception as e:
+        print(f"WebSocket handler error: {e}")

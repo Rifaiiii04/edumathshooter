@@ -12,6 +12,7 @@ class GestureDetector:
             min_detection_confidence=0.6,
             min_tracking_confidence=0.6
         )
+
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
             raise RuntimeError("Kamera tidak bisa dibuka")
@@ -40,10 +41,9 @@ class GestureDetector:
 
         lm = result.multi_hand_landmarks[0].landmark
 
-        # normalized cursor (0..1)
-        index_tip = lm[8]
-        data["x"] = index_tip.x
-        data["y"] = index_tip.y
+        # normalized cursor
+        data["x"] = lm[8].x
+        data["y"] = lm[8].y
 
         armed = self.rules.is_armed(lm)
         data["armed"] = armed
