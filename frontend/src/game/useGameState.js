@@ -65,7 +65,9 @@ export function useGameState(difficulty, operation, onGameEnd) {
     const dx = shootX - answer.x;
     const dy = shootY - answer.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    return distance < answer.radius;
+    // Add tolerance for better hit detection (15px = 37.5% of 40px radius)
+    const hitRadius = answer.radius + 15; // 15px tolerance for easier hits
+    return distance < hitRadius;
   }, []);
 
   const handleShoot = useCallback((shootX, shootY) => {
@@ -77,9 +79,11 @@ export function useGameState(difficulty, operation, onGameEnd) {
     }
     lastShootTimeRef.current = now;
 
+    let hitDetected = false;
     for (let i = 0; i < answers.length; i++) {
       const answer = answers[i];
       if (checkCollision(shootX, shootY, answer)) {
+        hitDetected = true;
         if (answer.isCorrect) {
           const points = difficulty === "easy" ? 10 : difficulty === "medium" ? 20 : 30;
           setScore((prev) => prev + points);
@@ -92,6 +96,17 @@ export function useGameState(difficulty, operation, onGameEnd) {
         }
         break;
       }
+    }
+    
+    // Debug: log if shoot happened but no collision detected
+    if (!hitDetected) {
+      const distances = answers.map(a => {
+        const dx = shootX - a.x;
+        const dy = shootY - a.y;
+        return Math.sqrt(dx * dx + dy * dy);
+      });
+      const minDistance = Math.min(...distances);
+      console.log(`Shoot at (${shootX.toFixed(1)}, ${shootY.toFixed(1)}), closest answer distance: ${minDistance.toFixed(1)}, radius: ${answers[0]?.radius || 40}`);
     }
   }, [isPlaying, currentQuestion, answers, checkCollision, difficulty, generateNewQuestion]);
 

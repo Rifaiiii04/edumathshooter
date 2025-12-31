@@ -22,9 +22,8 @@ export default function GameCanvas({ gesture, answers = [], isPlaying, isReloadi
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      ctx.save();
-      ctx.translate(shakeOffset.x, shakeOffset.y);
-
+      // Don't apply shake to answers - only to visual effects
+      // This ensures collision detection matches visual position
       if (answers && answers.length > 0) {
         answers.forEach((answer) => {
           ctx.save();
@@ -49,6 +48,9 @@ export default function GameCanvas({ gesture, answers = [], isPlaying, isReloadi
           ctx.restore();
         });
       }
+      
+      ctx.save();
+      ctx.translate(shakeOffset.x, shakeOffset.y);
 
       if (gesture && x != null && y != null) {
         const cursorX = x * canvas.width;
@@ -197,6 +199,43 @@ export default function GameCanvas({ gesture, answers = [], isPlaying, isReloadi
       }
       
       ctx.restore();
+      
+      // Debug: Draw shoot position indicator (if available)
+      if (shoot && gesture && x != null && y != null) {
+        ctx.save();
+        const shootX = x * canvas.width;
+        const shootY = y * canvas.height;
+        
+        // Draw small circle at shoot position
+        ctx.beginPath();
+        ctx.arc(shootX, shootY, 3, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255, 255, 0, 0.8)";
+        ctx.fill();
+        
+        // Draw line to nearest answer for debugging
+        if (answers && answers.length > 0) {
+          let nearestAnswer = answers[0];
+          let minDist = Infinity;
+          answers.forEach(a => {
+            const dx = shootX - a.x;
+            const dy = shootY - a.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < minDist) {
+              minDist = dist;
+              nearestAnswer = a;
+            }
+          });
+          
+          ctx.beginPath();
+          ctx.moveTo(shootX, shootY);
+          ctx.lineTo(nearestAnswer.x, nearestAnswer.y);
+          ctx.strokeStyle = minDist < (nearestAnswer.radius + 15) ? "rgba(0, 255, 0, 0.5)" : "rgba(255, 0, 0, 0.5)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+        
+        ctx.restore();
+      }
 
       if (isPlaying) {
         animationFrameRef.current = requestAnimationFrame(draw);
