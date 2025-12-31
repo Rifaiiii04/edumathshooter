@@ -1,10 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 export function useGestureSocket() {
   const wsRef = useRef(null);
   const [gesture, setGesture] = useState(null);
   const [connected, setConnected] = useState(false);
   const reconnectTimeoutRef = useRef(null);
+  
+  const smoothXRef = useRef(null);
+  const smoothYRef = useRef(null);
+  const smoothingFactor = 0.65;
+  const lossFrameCountRef = useRef(0);
+  const maxLossFrames = 3;
 
   useEffect(() => {
     let ws = null;
@@ -90,7 +96,43 @@ export function useGestureSocket() {
           if (isMounted && shouldReconnect) {
             try {
               const data = JSON.parse(e.data);
-              setGesture(data);
+              
+              if (data.x !== null && data.y !== null) {
+                lossFrameCountRef.current = 0;
+                
+                if (smoothXRef.current === null || smoothYRef.current === null) {
+                  smoothXRef.current = data.x;
+                  smoothYRef.current = data.y;
+                } else {
+                  const dx = data.x - smoothXRef.current;
+                  const dy = data.y - smoothYRef.current;
+                  
+                  if (Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001) {
+                    smoothXRef.current = smoothXRef.current * (1 - smoothingFactor) + data.x * smoothingFactor;
+                    smoothYRef.current = smoothYRef.current * (1 - smoothingFactor) + data.y * smoothingFactor;
+                  }
+                }
+                
+                setGesture({
+                  ...data,
+                  x: smoothXRef.current,
+                  y: smoothYRef.current
+                });
+              } else {
+                lossFrameCountRef.current += 1;
+                
+                if (lossFrameCountRef.current <= maxLossFrames && smoothXRef.current !== null && smoothYRef.current !== null) {
+                  setGesture({
+                    ...data,
+                    x: smoothXRef.current,
+                    y: smoothYRef.current
+                  });
+                } else {
+                  smoothXRef.current = null;
+                  smoothYRef.current = null;
+                  setGesture(data);
+                }
+              }
             } catch (error) {
               console.error("Error parsing WebSocket message:", error);
             }
@@ -132,6 +174,10 @@ export function useGestureSocket() {
         clearTimeout(sendControlTimeoutRef.current);
         sendControlTimeoutRef.current = null;
       }
+      
+      smoothXRef.current = null;
+      smoothYRef.current = null;
+      lossFrameCountRef.current = 0;
 
       const currentWs = ws || wsRef.current;
       if (currentWs) {
