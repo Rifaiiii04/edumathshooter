@@ -9,6 +9,7 @@ is_running = False
 async def handler(websocket):
     global is_running
     print("Client connected")
+    print("Kamera sedang diakses...")
 
     try:
         while True:
@@ -20,7 +21,7 @@ async def handler(websocket):
                     if data.get("type") == "CONTROL":
                         if data.get("action") == "START":
                             is_running = True
-                            print("GAME STARTED")
+                            print("GAME STARTED - Gesture detection aktif")
                         elif data.get("action") == "PAUSE":
                             is_running = False
                             print("GAME PAUSED")
@@ -30,15 +31,24 @@ async def handler(websocket):
             except asyncio.TimeoutError:
                 pass
 
-            if is_running:
-                try:
-                    gesture = detector.read()
-                    if gesture:
-                        await websocket.send(json.dumps(gesture))
-                except Exception as e:
-                    print(f"Error reading gesture: {e}")
+            try:
+                gesture = detector.read()
+                if gesture is None:
+                    print("Warning: Kamera gagal membaca frame")
+                    continue
+                
+                if is_running:
+                    await websocket.send(json.dumps(gesture))
+                elif gesture.get("x") is not None or gesture.get("y") is not None:
+                    await websocket.send(json.dumps(gesture))
+            except Exception as e:
+                print(f"Error reading gesture: {e}")
+                import traceback
+                traceback.print_exc()
 
     except websockets.exceptions.ConnectionClosed:
         print("Client disconnected")
     except Exception as e:
         print(f"WebSocket handler error: {e}")
+        import traceback
+        traceback.print_exc()

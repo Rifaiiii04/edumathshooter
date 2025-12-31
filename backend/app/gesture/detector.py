@@ -13,13 +13,25 @@ class GestureDetector:
             min_tracking_confidence=0.6
         )
 
+        print("Mencoba membuka kamera...")
         self.cap = cv2.VideoCapture(0)
+        
         if not self.cap.isOpened():
+            print("ERROR: Kamera tidak bisa dibuka. Coba:")
+            print("1. Pastikan kamera tidak digunakan aplikasi lain")
+            print("2. Coba ganti index kamera (0 -> 1 atau 2)")
             raise RuntimeError("Kamera tidak bisa dibuka")
+        
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        print("Kamera berhasil dibuka!")
 
         self.rules = GestureRules()
 
     def read(self):
+        if not self.cap.isOpened():
+            return None
+            
         ret, frame = self.cap.read()
         if not ret:
             return None
@@ -41,7 +53,6 @@ class GestureDetector:
 
         lm = result.multi_hand_landmarks[0].landmark
 
-        # normalized cursor
         data["x"] = lm[8].x
         data["y"] = lm[8].y
 
