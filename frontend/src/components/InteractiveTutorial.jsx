@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useGestureSocket } from "../hooks/useGestureSocker";
 import GameCanvas from "../game/GameCanvas";
 
@@ -6,6 +6,8 @@ export default function InteractiveTutorial({ onComplete }) {
   const { gesture, connected } = useGestureSocket();
   const [currentStep, setCurrentStep] = useState(0);
   const [stepCompleted, setStepCompleted] = useState(false);
+  const timerRef = useRef(null);
+  const hasAdvancedRef = useRef(false);
 
   const steps = [
     {
@@ -32,34 +34,48 @@ export default function InteractiveTutorial({ onComplete }) {
     {
       id: "shoot",
       title: "Langkah 4: Tembak!",
-      instruction: "Dengan tangan masih berbentuk pistol, gerakkan tanganmu ke bawah dengan cepat dan tegas. Titik akan berubah menjadi merah saat kamu menembak. Coba sekarang!",
+      instruction: "Dengan tangan masih berbentuk pistol, angkat jari telunjuk ke atas dengan cepat. Titik akan berubah menjadi merah saat kamu menembak. Coba sekarang!",
       checkCondition: () => gesture?.shoot === true,
       position: "top-center",
     },
   ];
 
-  const currentStepData = steps[currentStep];
+  useEffect(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    hasAdvancedRef.current = false;
+    setStepCompleted(false);
+  }, [currentStep]);
 
   useEffect(() => {
+    if (hasAdvancedRef.current || stepCompleted) return;
+    
+    const currentStepData = steps[currentStep];
     if (!currentStepData) return;
     
     const conditionMet = currentStepData.checkCondition();
-    if (conditionMet && !stepCompleted) {
+    if (conditionMet) {
       setStepCompleted(true);
-      const timer = setTimeout(() => {
+      hasAdvancedRef.current = true;
+      
+      timerRef.current = setTimeout(() => {
         if (currentStep < steps.length - 1) {
-          setCurrentStep(currentStep + 1);
-          setStepCompleted(false);
+          setCurrentStep(prev => {
+            hasAdvancedRef.current = false;
+            return prev + 1;
+          });
         } else {
           setTimeout(() => {
             onComplete();
           }, 1500);
         }
       }, 2000);
-      
-      return () => clearTimeout(timer);
     }
-  }, [gesture, currentStep, stepCompleted, currentStepData, steps.length, onComplete]);
+  }, [gesture, currentStep, stepCompleted, onComplete]);
+
+  const currentStepData = steps[currentStep];
 
   const getPopupPosition = () => {
     switch (currentStepData?.position) {

@@ -6,6 +6,7 @@ import { useGestureSocket } from "../hooks/useGestureSocker";
 import { getScoreMessage } from "./getScoreMessage";
 import { XCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/solid";
 import gunShootSound from "../assets/sound/gunshoot.mp3";
+import backSound from "../assets/sound/backsound.mp3";
 
 export default function GameScreen({ 
   difficulty,
@@ -30,6 +31,7 @@ export default function GameScreen({
   const shootRef = useRef(false);
   const startSentRef = useRef(false);
   const audioRef = useRef(null);
+  const backSoundRef = useRef(null);
   const [isReloading, setIsReloading] = useState(false);
   const [reloadProgress, setReloadProgress] = useState(0);
   const reloadTimeoutRef = useRef(null);
@@ -37,7 +39,7 @@ export default function GameScreen({
   const RELOAD_TIME = 1.5; // 1.5 detik reload time
 
   useEffect(() => {
-    if (currentQuestion && !isPlaying && !gameOver) {
+    if (currentQuestion === null && !isPlaying && !gameOver) {
       startGame();
     }
   }, [currentQuestion, isPlaying, gameOver, startGame]);
@@ -72,10 +74,36 @@ export default function GameScreen({
       audioRef.current = new Audio(gunShootSound);
       audioRef.current.volume = 0.5;
       audioRef.current.preload = "auto";
-      // Preload audio untuk mengurangi delay
       audioRef.current.load();
     }
   }, []);
+
+  useEffect(() => {
+    if (!backSoundRef.current) {
+      backSoundRef.current = new Audio(backSound);
+      backSoundRef.current.loop = true;
+      backSoundRef.current.volume = 0.3;
+      backSoundRef.current.preload = "auto";
+    }
+
+    if (isPlaying && !gameOver) {
+      backSoundRef.current.play().catch((error) => {
+        console.warn("Error playing background sound:", error);
+      });
+    } else {
+      backSoundRef.current.pause();
+      if (gameOver) {
+        backSoundRef.current.currentTime = 0;
+      }
+    }
+
+    return () => {
+      if (backSoundRef.current) {
+        backSoundRef.current.pause();
+        backSoundRef.current.currentTime = 0;
+      }
+    };
+  }, [isPlaying, gameOver]);
 
   useEffect(() => {
     // Cleanup function untuk memastikan tidak ada stuck
@@ -247,15 +275,23 @@ export default function GameScreen({
       />
 
       {!isPlaying && !gameOver && currentQuestion && (
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-30">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">Game Paused</h2>
-            <button
-              onClick={startGame}
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold px-8 py-3 rounded-lg transition-all duration-200"
-            >
-              Resume
-            </button>
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-30 animate-fadeIn">
+          <div className="bg-slate-800/95 backdrop-blur-lg rounded-2xl p-8 text-center max-w-md w-full mx-4 shadow-2xl border-2 border-white/20 animate-scaleIn">
+            <h2 className="text-3xl font-bold text-white mb-6">Game Paused</h2>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={startGame}
+                className="bg-green-500 hover:bg-green-600 text-white font-semibold px-8 py-3 rounded-lg transition-all duration-200 transform hover:scale-105"
+              >
+                Resume
+              </button>
+              <button
+                onClick={onGameEnd}
+                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-8 py-3 rounded-lg transition-all duration-200 transform hover:scale-105"
+              >
+                Kembali ke Menu
+              </button>
+            </div>
           </div>
         </div>
       )}

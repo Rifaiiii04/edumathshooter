@@ -3,7 +3,6 @@ import DifficultySelect from "./components/DifficultySelect";
 import PlayerForm from "./components/PlayerForm";
 import TutorialConfirmation from "./components/TutorialConfirmation";
 import InteractiveTutorial from "./components/InteractiveTutorial";
-import CameraPermission from "./components/CameraPermission";
 import GameScreen from "./game/GameScreen";
 
 export default function App() {
@@ -22,10 +21,6 @@ export default function App() {
 
   const handlePlayerSubmit = (data) => {
     setPlayerData(data);
-    setStep("camera");
-  };
-
-  const handleCameraGranted = () => {
     setStep("tutorial-confirm");
   };
 
@@ -60,10 +55,6 @@ export default function App() {
 
   if (step === "playerForm") {
     return <PlayerForm onSubmit={handlePlayerSubmit} />;
-  }
-
-  if (step === "camera") {
-    return <CameraPermission onGranted={handleCameraGranted} />;
   }
 
   if (step === "tutorial-confirm") {

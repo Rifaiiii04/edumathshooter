@@ -8,7 +8,8 @@ export default function ControlPanel({ start, pause, connected }) {
 
   const handlePause = (e) => {
     e.preventDefault();
-    if (connected && pause) {
+    e.stopPropagation();
+    if (pause) {
       pause();
     }
   };
@@ -31,7 +32,6 @@ export default function ControlPanel({ start, pause, connected }) {
       <button
         type="button"
         onClick={handlePause}
-        disabled={!connected}
         className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 relative z-10 ${
           connected
             ? "bg-yellow-400 hover:bg-yellow-500 active:bg-yellow-600 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:ring-offset-2 focus:ring-offset-slate-800 transform active:scale-95 text-white shadow-md hover:shadow-lg"
