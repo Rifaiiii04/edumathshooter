@@ -1,8 +1,12 @@
+import { CameraIcon } from "@heroicons/react/24/solid";
+
 export default function CameraPermission({ onGranted }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
-        <div className="text-6xl mb-6">📷</div>
+        <div className="flex justify-center mb-6">
+          <CameraIcon className="w-24 h-24 text-white" />
+        </div>
         <h1 className="text-3xl font-bold text-white mb-4">
           Siap untuk Bermain!
         </h1>

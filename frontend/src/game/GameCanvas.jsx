@@ -128,7 +128,7 @@ export default function GameCanvas({ gesture, answers = [], isPlaying }) {
   }, []);
 
   return (
-    <div className="flex-1 relative bg-gradient-to-br from-gray-900 to-gray-800">
+    <div className="flex-1 relative bg-slate-900">
       {!gesture && (
         <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none z-0">
           <div className="text-center">

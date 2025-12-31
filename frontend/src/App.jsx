@@ -1,18 +1,22 @@
 import { useState } from "react";
 import DifficultySelect from "./components/DifficultySelect";
 import PlayerForm from "./components/PlayerForm";
-import Tutorial from "./components/Tutorial";
+import TutorialConfirmation from "./components/TutorialConfirmation";
+import InteractiveTutorial from "./components/InteractiveTutorial";
 import CameraPermission from "./components/CameraPermission";
 import GameScreen from "./game/GameScreen";
 
 export default function App() {
   const [step, setStep] = useState("difficulty");
   const [difficulty, setDifficulty] = useState(null);
+  const [operation, setOperation] = useState(null);
   const [playerData, setPlayerData] = useState(null);
   const [showTutorial, setShowTutorial] = useState(true);
+  const [tutorialMode, setTutorialMode] = useState(false);
 
-  const handleDifficultySelect = (selectedDifficulty) => {
-    setDifficulty(selectedDifficulty);
+  const handleDifficultySelect = (selection) => {
+    setDifficulty(selection.difficulty);
+    setOperation(selection.operation);
     setStep("playerForm");
   };
 
@@ -22,22 +26,30 @@ export default function App() {
   };
 
   const handleCameraGranted = () => {
+    setStep("tutorial-confirm");
+  };
+
+  const handleStartTutorial = () => {
+    setTutorialMode(true);
     setStep("tutorial");
+  };
+
+  const handleSkipTutorial = () => {
+    setShowTutorial(false);
+    setTutorialMode(false);
+    setStep("game");
   };
 
   const handleTutorialComplete = () => {
     setShowTutorial(false);
-    setStep("game");
-  };
-
-  const handleTutorialSkip = () => {
-    setShowTutorial(false);
+    setTutorialMode(false);
     setStep("game");
   };
 
   const handleGameEnd = () => {
     setStep("difficulty");
     setDifficulty(null);
+    setOperation(null);
     setPlayerData(null);
     setShowTutorial(true);
   };
@@ -54,19 +66,24 @@ export default function App() {
     return <CameraPermission onGranted={handleCameraGranted} />;
   }
 
-  if (step === "tutorial" && showTutorial) {
+  if (step === "tutorial-confirm") {
     return (
-      <Tutorial
-        onComplete={handleTutorialComplete}
-        onSkip={handleTutorialSkip}
+      <TutorialConfirmation
+        onStartTutorial={handleStartTutorial}
+        onSkip={handleSkipTutorial}
       />
     );
+  }
+
+  if (step === "tutorial" && tutorialMode) {
+    return <InteractiveTutorial onComplete={handleTutorialComplete} />;
   }
 
   if (step === "game") {
     return (
       <GameScreen
         difficulty={difficulty}
+        operation={operation}
         playerName={playerData?.name || "Player"}
         onGameEnd={handleGameEnd}
       />
