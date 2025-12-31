@@ -36,11 +36,11 @@ export default function GameCanvas({ gesture, answers = [], isPlaying, isReloadi
           ctx.fill();
 
           ctx.strokeStyle = answer.isCorrect ? "#22c55e" : "#ef4444";
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 4;
           ctx.stroke();
 
           ctx.fillStyle = "#ffffff";
-          ctx.font = "bold 20px Arial";
+          ctx.font = "bold 26px Arial";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(answer.value.toString(), answer.x, answer.y);

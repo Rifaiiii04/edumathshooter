@@ -14,12 +14,12 @@ export default function ControlPanel({ start, pause, connected }) {
   };
 
   return (
-    <div className="flex gap-3 p-4 bg-slate-800 text-white relative z-10">
+    <div className="flex gap-2 p-3 bg-slate-800/95 backdrop-blur-md border-t border-white/10 text-white relative z-10">
       <button
         type="button"
         onClick={handleStart}
         disabled={!connected}
-        className={`px-4 py-2 rounded font-medium transition-all duration-200 relative z-10 ${
+        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 relative z-10 ${
           connected
             ? "bg-green-500 hover:bg-green-600 active:bg-green-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 focus:ring-offset-slate-800 transform active:scale-95 shadow-md hover:shadow-lg"
             : "bg-gray-500 cursor-not-allowed opacity-50"
@@ -32,22 +32,22 @@ export default function ControlPanel({ start, pause, connected }) {
         type="button"
         onClick={handlePause}
         disabled={!connected}
-        className={`px-4 py-2 rounded font-medium transition-all duration-200 relative z-10 ${
+        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 relative z-10 ${
           connected
-            ? "bg-yellow-400 hover:bg-yellow-500 active:bg-yellow-600 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:ring-offset-2 focus:ring-offset-slate-800 transform active:scale-95 text-gray-900 shadow-md hover:shadow-lg"
+            ? "bg-yellow-400 hover:bg-yellow-500 active:bg-yellow-600 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:ring-offset-2 focus:ring-offset-slate-800 transform active:scale-95 text-white shadow-md hover:shadow-lg"
             : "bg-gray-500 cursor-not-allowed opacity-50"
         }`}
       >
         Pause
       </button>
 
-      <span className={`ml-4 text-sm flex items-center gap-2`}>
+      <span className={`ml-auto text-xs flex items-center gap-1.5 opacity-70`}>
         <span
-          className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-            connected ? "bg-green-500" : "bg-red-500"
+          className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${
+            connected ? "bg-green-400" : "bg-red-400"
           }`}
         />
-        {connected ? "Connected" : "Disconnected"}
+        {connected ? "Terhubung" : "Terputus"}
       </span>
     </div>
   );

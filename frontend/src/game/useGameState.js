@@ -38,7 +38,7 @@ export function useGameState(difficulty, operation, onGameEnd) {
         angle: angle,
         angleSpeed: angleSpeed,
         isCorrect: value === question.answer,
-        radius: 40,
+        radius: 50,
       };
     });
 

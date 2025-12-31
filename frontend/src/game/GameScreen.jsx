@@ -164,31 +164,35 @@ export default function GameScreen({
   }, [gesture, isPlaying, handleShoot, isReloading]);
 
   return (
-    <div className="w-screen h-screen flex flex-col relative overflow-hidden">
-      <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-start">
-        <div className="bg-black/50 backdrop-blur-sm rounded-lg p-4 text-white">
-          <div className="text-sm opacity-80">Pemain</div>
-          <div className="text-xl font-bold">{playerName}</div>
-        </div>
+    <div className="w-screen h-screen flex flex-col relative overflow-hidden bg-slate-900">
+      <div className="absolute top-0 left-0 right-0 z-20 bg-slate-900/95 backdrop-blur-md border-b border-white/10">
+        <div className="flex justify-between items-center px-6 py-3">
+          <div className="text-white">
+            <div className="text-xs opacity-70 mb-0.5">Pemain</div>
+            <div className="text-lg font-semibold">{playerName}</div>
+          </div>
 
-        <div className="bg-black/50 backdrop-blur-sm rounded-lg p-4 text-white text-center">
-          <div className="text-sm opacity-80">Skor</div>
-          <div className="text-3xl font-bold text-green-400">{score}</div>
-        </div>
+          <div className="flex items-center gap-8">
+            <div className="text-center">
+              <div className="text-xs opacity-70 mb-0.5">Skor</div>
+              <div className="text-2xl font-bold text-green-400">{score}</div>
+            </div>
 
-        <div className="bg-black/50 backdrop-blur-sm rounded-lg p-4 text-white text-center">
-          <div className="text-sm opacity-80">Waktu</div>
-          <div className={`text-3xl font-bold ${timeLeft <= 10 ? "text-red-400" : "text-yellow-400"}`}>
-            {timeLeft}s
+            <div className="text-center">
+              <div className="text-xs opacity-70 mb-0.5">Waktu</div>
+              <div className={`text-2xl font-bold ${timeLeft <= 10 ? "text-red-400" : "text-yellow-400"}`}>
+                {timeLeft}s
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {currentQuestion && (
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-20">
-          <div className="bg-black/70 backdrop-blur-sm rounded-xl p-6 text-white text-center shadow-2xl border-2 border-white/20">
-            <div className="text-sm opacity-80 mb-2">Soal</div>
-            <div className="text-4xl font-bold">{currentQuestion.question}</div>
+          <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg px-6 py-3 text-white shadow-lg border border-white/20">
+            <div className="text-xs opacity-70 mb-1 text-center">Soal</div>
+            <div className="text-xl font-bold text-center">{currentQuestion.question}</div>
           </div>
         </div>
       )}
@@ -203,32 +207,32 @@ export default function GameScreen({
 
       {!connected && (
         <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-20">
-          <div className="bg-red-500/80 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm flex items-center gap-2">
-            <XCircleIcon className="w-5 h-5" />
-            <span>WebSocket tidak terhubung. Pastikan backend Python berjalan: <code className="bg-black/30 px-2 py-1 rounded">python -m app.main</code></span>
+          <div className="bg-red-500/90 backdrop-blur-sm rounded-lg px-4 py-2.5 text-white text-sm flex items-center gap-2 shadow-lg">
+            <XCircleIcon className="w-4 h-4 flex-shrink-0" />
+            <span className="text-xs">WebSocket tidak terhubung. Pastikan backend Python berjalan: <code className="bg-black/40 px-1.5 py-0.5 rounded text-xs">python -m app.main</code></span>
           </div>
         </div>
       )}
       {connected && !gesture && (
         <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-20">
-          <div className="bg-yellow-500/80 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm flex items-center gap-2">
-            <ExclamationTriangleIcon className="w-5 h-5" />
-            <span>Menunggu deteksi gesture... Tunjukkan tangan ke kamera</span>
+          <div className="bg-yellow-500/90 backdrop-blur-sm rounded-lg px-4 py-2.5 text-white text-sm flex items-center gap-2 shadow-lg">
+            <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0" />
+            <span className="text-xs">Menunggu deteksi gesture... Tunjukkan tangan ke kamera</span>
           </div>
         </div>
       )}
 
       {isReloading && isPlaying && (
-        <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-20">
-          <div className="bg-black/80 backdrop-blur-sm rounded-lg px-6 py-4 text-white">
-            <div className="text-sm mb-2 text-center font-semibold">RELOADING...</div>
-            <div className="w-64 h-2 bg-gray-700 rounded-full overflow-hidden">
+        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20">
+          <div className="bg-slate-800/95 backdrop-blur-sm rounded-lg px-5 py-3 text-white shadow-xl border border-orange-500/30">
+            <div className="text-xs mb-2 text-center font-semibold text-orange-400 uppercase tracking-wider">RELOADING</div>
+            <div className="w-48 h-1.5 bg-gray-700/50 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-orange-500 transition-all duration-75 ease-linear"
+                className="h-full bg-gradient-to-r from-orange-500 to-orange-400 transition-all duration-75 ease-linear"
                 style={{ width: `${reloadProgress}%` }}
               />
             </div>
-            <div className="text-xs text-center mt-2 opacity-70">
+            <div className="text-xs text-center mt-2 opacity-60">
               {Math.ceil((RELOAD_TIME * (100 - reloadProgress)) / 100)}s
             </div>
           </div>
