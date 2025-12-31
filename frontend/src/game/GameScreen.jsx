@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGameState } from "./useGameState";
 import GameCanvas from "./GameCanvas";
 import ControlPanel from "../components/ControlPanel";
 import { useGestureSocket } from "../hooks/useGestureSocker";
 import { getScoreMessage } from "./getScoreMessage";
 import { XCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/solid";
+import gunShootSound from "../assets/sound/gunshoot.mp3";
 
 export default function GameScreen({ 
   difficulty,
@@ -28,12 +29,33 @@ export default function GameScreen({
 
   const shootRef = useRef(false);
   const startSentRef = useRef(false);
+  const audioRef = useRef(null);
+  const [isReloading, setIsReloading] = useState(false);
+  const [reloadProgress, setReloadProgress] = useState(0);
+  const reloadTimeoutRef = useRef(null);
+  const reloadIntervalRef = useRef(null);
+  const RELOAD_TIME = 1.5; // 1.5 detik reload time
 
   useEffect(() => {
     if (currentQuestion && !isPlaying && !gameOver) {
       startGame();
     }
   }, [currentQuestion, isPlaying, gameOver, startGame]);
+
+  useEffect(() => {
+    if (!isPlaying || gameOver) {
+      setIsReloading(false);
+      setReloadProgress(0);
+      if (reloadTimeoutRef.current) {
+        clearTimeout(reloadTimeoutRef.current);
+        reloadTimeoutRef.current = null;
+      }
+      if (reloadIntervalRef.current) {
+        clearInterval(reloadIntervalRef.current);
+        reloadIntervalRef.current = null;
+      }
+    }
+  }, [isPlaying, gameOver]);
 
   useEffect(() => {
     if (isPlaying && connected && !startSentRef.current) {
@@ -46,17 +68,100 @@ export default function GameScreen({
   }, [isPlaying, connected]);
 
   useEffect(() => {
-    if (gesture?.shoot && !shootRef.current && isPlaying) {
+    if (!audioRef.current) {
+      audioRef.current = new Audio(gunShootSound);
+      audioRef.current.volume = 0.5;
+      audioRef.current.preload = "auto";
+      // Preload audio untuk mengurangi delay
+      audioRef.current.load();
+    }
+  }, []);
+
+  useEffect(() => {
+    // Cleanup function untuk memastikan tidak ada stuck
+    return () => {
+      if (reloadIntervalRef.current) {
+        clearInterval(reloadIntervalRef.current);
+        reloadIntervalRef.current = null;
+      }
+      if (reloadTimeoutRef.current) {
+        clearTimeout(reloadTimeoutRef.current);
+        reloadTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (gesture?.shoot && !shootRef.current && isPlaying && !isReloading) {
       shootRef.current = true;
+      
+      // Start reload immediately after shooting
+      setIsReloading(true);
+      setReloadProgress(0);
+      
+      // Clear any existing reload timers
+      if (reloadIntervalRef.current) {
+        clearInterval(reloadIntervalRef.current);
+        reloadIntervalRef.current = null;
+      }
+      if (reloadTimeoutRef.current) {
+        clearTimeout(reloadTimeoutRef.current);
+        reloadTimeoutRef.current = null;
+      }
+      
+      // Play shoot sound immediately (before handleShoot)
+      // Audio durasi 4 detik, suara tembakan mulai di detik 1.5
+      // Jadi kita mulai dari detik 1.5 untuk langsung ke bagian tembakan
+      if (audioRef.current) {
+        try {
+          const SHOOT_SOUND_START_TIME = 1.5; // Detik dimana suara tembakan mulai
+          audioRef.current.currentTime = SHOOT_SOUND_START_TIME;
+          const playPromise = audioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((error) => {
+              console.warn("Error playing shoot sound:", error);
+            });
+          }
+        } catch (error) {
+          console.warn("Error playing shoot sound:", error);
+        }
+      }
+      
       if (gesture.x !== null && gesture.y !== null) {
         const shootX = gesture.x * window.innerWidth;
         const shootY = gesture.y * window.innerHeight;
         handleShoot(shootX, shootY);
       }
+      
+      // Reload progress animation
+      const startTime = Date.now();
+      reloadIntervalRef.current = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min((elapsed / (RELOAD_TIME * 1000)) * 100, 100);
+        setReloadProgress(progress);
+        
+        if (progress >= 100) {
+          if (reloadIntervalRef.current) {
+            clearInterval(reloadIntervalRef.current);
+            reloadIntervalRef.current = null;
+          }
+          setIsReloading(false);
+          setReloadProgress(0);
+        }
+      }, 16); // ~60fps update
+      
+      reloadTimeoutRef.current = setTimeout(() => {
+        setIsReloading(false);
+        setReloadProgress(0);
+        if (reloadIntervalRef.current) {
+          clearInterval(reloadIntervalRef.current);
+          reloadIntervalRef.current = null;
+        }
+      }, RELOAD_TIME * 1000);
     } else if (!gesture?.shoot) {
       shootRef.current = false;
     }
-  }, [gesture, isPlaying, handleShoot]);
+  }, [gesture, isPlaying, handleShoot, isReloading]);
 
   return (
     <div className="w-screen h-screen flex flex-col relative overflow-hidden">
@@ -113,10 +218,28 @@ export default function GameScreen({
         </div>
       )}
 
+      {isReloading && isPlaying && (
+        <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-20">
+          <div className="bg-black/80 backdrop-blur-sm rounded-lg px-6 py-4 text-white">
+            <div className="text-sm mb-2 text-center font-semibold">RELOADING...</div>
+            <div className="w-64 h-2 bg-gray-700 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-orange-500 transition-all duration-75 ease-linear"
+                style={{ width: `${reloadProgress}%` }}
+              />
+            </div>
+            <div className="text-xs text-center mt-2 opacity-70">
+              {Math.ceil((RELOAD_TIME * (100 - reloadProgress)) / 100)}s
+            </div>
+          </div>
+        </div>
+      )}
+
       <GameCanvas 
         gesture={gesture} 
         answers={answers}
         isPlaying={isPlaying}
+        isReloading={isReloading}
       />
 
       {!isPlaying && !gameOver && currentQuestion && (
