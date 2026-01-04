@@ -26,7 +26,7 @@ export function useGameState(difficulty, operation, inputMethod) {
       const centerY = window.innerHeight / 2;
 
       const baseSpeed =
-        difficulty === "easy" ? 12.5 : difficulty === "medium" ? 18.75 : 25;
+        difficulty === "easy" ? 10.5 : difficulty === "medium" ? 12.75 : 15.5;
       const speedMultiplier =
         inputMethod === "mouse" || inputMethod === "touch" ? 1.5 : 1;
       const speed = baseSpeed * speedMultiplier;
