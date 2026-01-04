@@ -4,17 +4,25 @@ import GameCanvas from "./GameCanvas";
 import ControlPanel from "../components/ControlPanel";
 import { useGestureSocket } from "../hooks/useGestureSocker";
 import { getScoreMessage } from "./getScoreMessage";
-import { XCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/solid";
+import {
+  XCircleIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/solid";
 import gunShootSound from "../assets/sound/gunshoot.mp3";
 import backSound from "../assets/sound/backsound.mp3";
 
-export default function GameScreen({ 
+export default function GameScreen({
   difficulty,
   operation,
-  playerName, 
-  onGameEnd 
+  playerName,
+  onGameEnd,
 }) {
-  const { gesture, connected, start: startGesture, pause: pauseGesture } = useGestureSocket();
+  const {
+    gesture,
+    connected,
+    start: startGesture,
+    pause: pauseGesture,
+  } = useGestureSocket();
   const {
     score,
     timeLeft,
@@ -36,7 +44,7 @@ export default function GameScreen({
   const [reloadProgress, setReloadProgress] = useState(0);
   const reloadTimeoutRef = useRef(null);
   const reloadIntervalRef = useRef(null);
-  const RELOAD_TIME = 1.5; // 1.5 detik reload time
+  const RELOAD_TIME = 1.5;
 
   useEffect(() => {
     if (currentQuestion === null && !isPlaying && !gameOver) {
@@ -106,7 +114,6 @@ export default function GameScreen({
   }, [isPlaying, gameOver]);
 
   useEffect(() => {
-    // Cleanup function untuk memastikan tidak ada stuck
     return () => {
       if (reloadIntervalRef.current) {
         clearInterval(reloadIntervalRef.current);
@@ -122,12 +129,10 @@ export default function GameScreen({
   useEffect(() => {
     if (gesture?.shoot && !shootRef.current && isPlaying && !isReloading) {
       shootRef.current = true;
-      
-      // Start reload immediately after shooting
+
       setIsReloading(true);
       setReloadProgress(0);
-      
-      // Clear any existing reload timers
+
       if (reloadIntervalRef.current) {
         clearInterval(reloadIntervalRef.current);
         reloadIntervalRef.current = null;
@@ -136,13 +141,10 @@ export default function GameScreen({
         clearTimeout(reloadTimeoutRef.current);
         reloadTimeoutRef.current = null;
       }
-      
-      // Play shoot sound immediately (before handleShoot)
-      // Audio durasi 4 detik, suara tembakan mulai di detik 1.5
-      // Jadi kita mulai dari detik 1.5 untuk langsung ke bagian tembakan
+
       if (audioRef.current) {
         try {
-          const SHOOT_SOUND_START_TIME = 1.5; // Detik dimana suara tembakan mulai
+          const SHOOT_SOUND_START_TIME = 1.5;
           audioRef.current.currentTime = SHOOT_SOUND_START_TIME;
           const playPromise = audioRef.current.play();
           if (playPromise !== undefined) {
@@ -154,20 +156,19 @@ export default function GameScreen({
           console.warn("Error playing shoot sound:", error);
         }
       }
-      
+
       if (gesture.x !== null && gesture.y !== null) {
         const shootX = gesture.x * window.innerWidth;
         const shootY = gesture.y * window.innerHeight;
         handleShoot(shootX, shootY);
       }
-      
-      // Reload progress animation
+
       const startTime = Date.now();
       reloadIntervalRef.current = setInterval(() => {
         const elapsed = Date.now() - startTime;
         const progress = Math.min((elapsed / (RELOAD_TIME * 1000)) * 100, 100);
         setReloadProgress(progress);
-        
+
         if (progress >= 100) {
           if (reloadIntervalRef.current) {
             clearInterval(reloadIntervalRef.current);
@@ -176,8 +177,8 @@ export default function GameScreen({
           setIsReloading(false);
           setReloadProgress(0);
         }
-      }, 16); // ~60fps update
-      
+      }, 16);
+
       reloadTimeoutRef.current = setTimeout(() => {
         setIsReloading(false);
         setReloadProgress(0);
@@ -202,13 +203,17 @@ export default function GameScreen({
 
           <div className="flex items-center gap-8">
             <div className="text-center">
-              <div className="text-xs opacity-70 mb-0.5">Skor</div>
+              <div className="text-xs opacity-70 mb-0.5 text-white">Skor</div>
               <div className="text-2xl font-bold text-green-400">{score}</div>
             </div>
 
             <div className="text-center">
-              <div className="text-xs opacity-70 mb-0.5">Waktu</div>
-              <div className={`text-2xl font-bold ${timeLeft <= 10 ? "text-red-400" : "text-yellow-400"}`}>
+              <div className="text-xs opacity-70 mb-0.5 text-white">Waktu</div>
+              <div
+                className={`text-2xl font-bold ${
+                  timeLeft <= 10 ? "text-red-400" : "text-yellow-400"
+                }`}
+              >
                 {timeLeft}s
               </div>
             </div>
@@ -220,15 +225,17 @@ export default function GameScreen({
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-20">
           <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg px-6 py-3 text-white shadow-lg border border-white/20">
             <div className="text-xs opacity-70 mb-1 text-center">Soal</div>
-            <div className="text-xl font-bold text-center">{currentQuestion.question}</div>
+            <div className="text-xl font-bold text-center">
+              {currentQuestion.question}
+            </div>
           </div>
         </div>
       )}
 
       <div className="absolute bottom-0 left-0 right-0 z-20">
-        <ControlPanel 
-          start={startGame} 
-          pause={pauseGame} 
+        <ControlPanel
+          start={startGame}
+          pause={pauseGame}
           connected={connected}
         />
       </div>
@@ -236,8 +243,13 @@ export default function GameScreen({
       {!connected && (
         <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-20">
           <div className="bg-red-500/90 backdrop-blur-sm rounded-lg px-4 py-2.5 text-white text-sm flex items-center gap-2 shadow-lg">
-            <XCircleIcon className="w-4 h-4 flex-shrink-0" />
-            <span className="text-xs">WebSocket tidak terhubung. Pastikan backend Python berjalan: <code className="bg-black/40 px-1.5 py-0.5 rounded text-xs">python -m app.main</code></span>
+            <XCircleIcon className="w-4 h-4 flex shrink-0" />
+            <span className="text-xs">
+              WebSocket tidak terhubung. Pastikan backend Python berjalan:{" "}
+              <code className="bg-black/40 px-1.5 py-0.5 rounded text-xs">
+                python -m app.main
+              </code>
+            </span>
           </div>
         </div>
       )}
@@ -245,7 +257,9 @@ export default function GameScreen({
         <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-20">
           <div className="bg-yellow-500/90 backdrop-blur-sm rounded-lg px-4 py-2.5 text-white text-sm flex items-center gap-2 shadow-lg">
             <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0" />
-            <span className="text-xs">Menunggu deteksi gesture... Tunjukkan tangan ke kamera</span>
+            <span className="text-xs">
+              Menunggu deteksi gesture... Tunjukkan tangan ke kamera
+            </span>
           </div>
         </div>
       )}
@@ -253,9 +267,11 @@ export default function GameScreen({
       {isReloading && isPlaying && (
         <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20">
           <div className="bg-slate-800/95 backdrop-blur-sm rounded-lg px-5 py-3 text-white shadow-xl border border-orange-500/30">
-            <div className="text-xs mb-2 text-center font-semibold text-orange-400 uppercase tracking-wider">RELOADING</div>
+            <div className="text-xs mb-2 text-center font-semibold text-orange-400 uppercase tracking-wider">
+              RELOADING
+            </div>
             <div className="w-48 h-1.5 bg-gray-700/50 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-orange-500 to-orange-400 transition-all duration-75 ease-linear"
                 style={{ width: `${reloadProgress}%` }}
               />
@@ -267,8 +283,8 @@ export default function GameScreen({
         </div>
       )}
 
-      <GameCanvas 
-        gesture={gesture} 
+      <GameCanvas
+        gesture={gesture}
         answers={answers}
         isPlaying={isPlaying}
         isReloading={isReloading}
@@ -296,54 +312,64 @@ export default function GameScreen({
         </div>
       )}
 
-      {gameOver && (() => {
-        const scoreMessage = getScoreMessage(score, difficulty);
-        const IconComponent = scoreMessage.Icon;
-        return (
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-30 animate-fadeIn">
-            <div className="bg-slate-800/95 backdrop-blur-lg rounded-2xl p-8 text-center max-w-lg w-full mx-4 shadow-2xl border-2 border-white/20 animate-scaleIn">
-              <div className="flex justify-center mb-4 animate-bounce">
-                <IconComponent className={`w-20 h-20 ${scoreMessage.color}`} />
-              </div>
-              <h2 className="text-5xl font-bold text-white mb-2">
-                {scoreMessage.title}
-              </h2>
-              <p className="text-xl text-white/80 mb-6">
-                {scoreMessage.message}
-              </p>
-              <div className="bg-black/30 rounded-xl p-6 mb-6 border border-white/10">
-                <div className="text-sm text-white/60 mb-2">Skor Akhir Kamu</div>
-                <div className={`text-5xl font-bold ${scoreMessage.color} mb-2`}>
-                  {score}
+      {gameOver &&
+        (() => {
+          const scoreMessage = getScoreMessage(score, difficulty);
+          const IconComponent = scoreMessage.Icon;
+          return (
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-30 animate-fadeIn">
+              <div className="bg-slate-800/95 backdrop-blur-lg rounded-2xl p-8 text-center max-w-lg w-full mx-4 shadow-2xl border-2 border-white/20 animate-scaleIn">
+                <div className="flex justify-center mb-4 animate-bounce">
+                  <IconComponent
+                    className={`w-20 h-20 ${scoreMessage.color}`}
+                  />
                 </div>
-                <div className="text-sm text-white/60">
-                  {difficulty === "easy" ? "Level Mudah" : difficulty === "medium" ? "Level Sedang" : "Level Sulit"}
+                <h2 className="text-5xl font-bold text-white mb-2">
+                  {scoreMessage.title}
+                </h2>
+                <p className="text-xl text-white/80 mb-6">
+                  {scoreMessage.message}
+                </p>
+                <div className="bg-black/30 rounded-xl p-6 mb-6 border border-white/10">
+                  <div className="text-sm text-white/60 mb-2">
+                    Skor Akhir Kamu
+                  </div>
+                  <div
+                    className={`text-5xl font-bold ${scoreMessage.color} mb-2`}
+                  >
+                    {score}
+                  </div>
+                  <div className="text-sm text-white/60">
+                    {difficulty === "easy"
+                      ? "Level Mudah"
+                      : difficulty === "medium"
+                      ? "Level Sedang"
+                      : "Level Sulit"}
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-3">
-                <button
-                  onClick={() => {
-                    resetGame();
-                    setTimeout(() => {
-                      startGame();
-                    }, 300);
-                  }}
-                  className="bg-green-500 hover:bg-green-600 text-white font-semibold px-8 py-4 rounded-lg transition-all duration-200 w-full transform hover:scale-105 shadow-lg"
-                >
-                  Bermain Kembali
-                </button>
-                <button
-                  onClick={onGameEnd}
-                  className="bg-white/10 hover:bg-white/20 text-white font-medium px-8 py-3 rounded-lg transition-all duration-200 w-full border border-white/20"
-                >
-                  Kembali ke Menu
-                </button>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => {
+                      resetGame();
+                      setTimeout(() => {
+                        startGame();
+                      }, 300);
+                    }}
+                    className="bg-green-500 hover:bg-green-600 text-white font-semibold px-8 py-4 rounded-lg transition-all duration-200 w-full transform hover:scale-105 shadow-lg"
+                  >
+                    Bermain Kembali
+                  </button>
+                  <button
+                    onClick={onGameEnd}
+                    className="bg-white/10 hover:bg-white/20 text-white font-medium px-8 py-3 rounded-lg transition-all duration-200 w-full border border-white/20"
+                  >
+                    Kembali ke Menu
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
     </div>
   );
 }
-

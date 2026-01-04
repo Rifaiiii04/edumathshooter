@@ -10,24 +10,19 @@ print("Tekan Q untuk keluar")
 while True:
     data = detector.read()
 
-    # Kalau kamera gagal baca frame
     if data is None:
         print("Gagal baca frame")
         
         break
 
-    # Print hasil gesture (debug)
     print(data)
 
-    # === VISUAL DEBUG (kamera) ===
-    # Ambil frame langsung dari detector.cap
     ret, frame = detector.cap.read()
     if not ret:
         break
 
     frame = cv2.flip(frame, 1)
 
-    # Draw cursor dari normalized coord
     if data["x"] is not None and data["y"] is not None:
         h, w, _ = frame.shape
         cx = int(data["x"] * w)

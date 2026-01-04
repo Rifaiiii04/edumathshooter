@@ -38,6 +38,7 @@ export function useGameState(difficulty, operation, onGameEnd) {
         angle: angle,
         angleSpeed: angleSpeed,
         isCorrect: value === question.answer,
+        isShot: false,
         radius: 50,
       };
     });
@@ -65,8 +66,7 @@ export function useGameState(difficulty, operation, onGameEnd) {
     const dx = shootX - answer.x;
     const dy = shootY - answer.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    // Add tolerance for better hit detection (15px = 37.5% of 40px radius)
-    const hitRadius = answer.radius + 15; // 15px tolerance for easier hits
+    const hitRadius = answer.radius + 15;
     return distance < hitRadius;
   }, []);
 
@@ -80,25 +80,39 @@ export function useGameState(difficulty, operation, onGameEnd) {
     lastShootTimeRef.current = now;
 
     let hitDetected = false;
+    let hitAnswer = null;
+    
     for (let i = 0; i < answers.length; i++) {
       const answer = answers[i];
       if (checkCollision(shootX, shootY, answer)) {
         hitDetected = true;
-        if (answer.isCorrect) {
-          const points = difficulty === "easy" ? 10 : difficulty === "medium" ? 20 : 30;
-          setScore((prev) => prev + points);
-          setTimeout(() => {
-            generateNewQuestion();
-          }, 300);
-        } else {
-          const penalty = difficulty === "easy" ? 5 : difficulty === "medium" ? 10 : 15;
-          setScore((prev) => Math.max(0, prev - penalty));
-        }
+        hitAnswer = answer;
         break;
       }
     }
     
-    // Debug: log if shoot happened but no collision detected
+    if (hitDetected && hitAnswer) {
+      setAnswers((prevAnswers) => {
+        return prevAnswers.map((answer) => {
+          if (answer.id === hitAnswer.id) {
+            return { ...answer, isShot: true };
+          }
+          return answer;
+        });
+      });
+      
+      if (hitAnswer.isCorrect) {
+        const points = difficulty === "easy" ? 10 : difficulty === "medium" ? 20 : 30;
+        setScore((prev) => prev + points);
+        setTimeout(() => {
+          generateNewQuestion();
+        }, 300);
+      } else {
+        const penalty = difficulty === "easy" ? 5 : difficulty === "medium" ? 10 : 15;
+        setScore((prev) => Math.max(0, prev - penalty));
+      }
+    }
+    
     if (!hitDetected) {
       const distances = answers.map(a => {
         const dx = shootX - a.x;

@@ -1,19 +1,17 @@
 export default function Cursor({ ctx, x, y, armed, shoot }) {
   if (!ctx || x == null || y == null) return;
 
-  let color = "#9ca3af"; // gray-400
-  if (armed) color = "#22c55e"; // green-500
-  if (shoot) color = "#ef4444"; // red-500
+  let color = "#9ca3af";
+  if (armed) color = "#22c55e";
+  if (shoot) color = "#ef4444";
 
   const size = 12;
 
-  // Circle
   ctx.beginPath();
   ctx.arc(x, y, size, 0, Math.PI * 2);
   ctx.fillStyle = color;
   ctx.fill();
 
-  // Crosshair
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
 
