@@ -414,7 +414,7 @@ export default function LandingPage({ onGetStarted }) {
           </div>
           <div className="border-t border-slate-800 pt-8 text-center">
             <p className="text-blue-200/60 text-sm">
-              © 2024 Vectory. Challenge yourself with math problems. Improve
+              © {new Date().getFullYear()} Vectory. Challenge yourself with math problems. Improve
               your skills. Have fun learning.
             </p>
           </div>
