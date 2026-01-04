@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { generateMathQuestion } from "./mathGenerator";
 
-export function useGameState(difficulty, operation, onGameEnd) {
+export function useGameState(difficulty, operation, inputMethod, onGameEnd) {
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
   const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -25,7 +25,9 @@ export function useGameState(difficulty, operation, onGameEnd) {
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
       
-      const speed = difficulty === "easy" ? 1 : difficulty === "medium" ? 1.5 : 2;
+      const baseSpeed = difficulty === "easy" ? 1 : difficulty === "medium" ? 1.5 : 2;
+      const speedMultiplier = (inputMethod === "mouse" || inputMethod === "touch") ? 1.5 : 1;
+      const speed = baseSpeed * speedMultiplier;
       const angleSpeed = (Math.random() - 0.5) * 0.02;
 
       return {

@@ -1,20 +1,53 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 export default function GameCanvas({
   gesture,
+  mouseInput,
+  inputMethod,
   answers = [],
   isPlaying,
   isReloading = false,
+  gameCanvasRef,
 }) {
   const canvasRef = useRef(null);
   const animationFrameRef = useRef(null);
   const [shakeOffset, setShakeOffset] = useState({ x: 0, y: 0 });
   const shootTriggeredRef = useRef(false);
 
-  const x = gesture?.x;
-  const y = gesture?.y;
-  const armed = gesture?.armed;
-  const shoot = gesture?.shoot;
+  const isGestureMode = inputMethod === "gesture" || !inputMethod;
+  const isMouseMode = inputMethod === "mouse";
+  const isTouchMode = inputMethod === "touch";
+
+  const setCanvasRef = useCallback(
+    (node) => {
+      canvasRef.current = node;
+      if (gameCanvasRef) {
+        gameCanvasRef.current = node;
+      }
+    },
+    [gameCanvasRef]
+  );
+
+  const x = isGestureMode
+    ? gesture?.x
+    : isMouseMode || isTouchMode
+    ? mouseInput?.cursor?.x
+    : null;
+  const y = isGestureMode
+    ? gesture?.y
+    : isMouseMode || isTouchMode
+    ? mouseInput?.cursor?.y
+    : null;
+  const armed = isGestureMode
+    ? gesture?.armed
+    : isMouseMode || isTouchMode
+    ? true
+    : false;
+  const shoot = isGestureMode
+    ? gesture?.shoot
+    : isMouseMode || isTouchMode
+    ? mouseInput?.isShooting
+    : false;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -67,7 +100,7 @@ export default function GameCanvas({
       ctx.save();
       ctx.translate(shakeOffset.x, shakeOffset.y);
 
-      if (gesture && x != null && y != null) {
+      if (x != null && y != null) {
         const cursorX = x * canvas.width;
         const cursorY = y * canvas.height;
 
@@ -346,7 +379,10 @@ export default function GameCanvas({
 
   useEffect(() => {
     const handleResize = () => {
-      const canvas = canvasRef.current;
+      const canvas =
+        (isMouseMode || isTouchMode) && mouseInput?.canvasRef
+          ? mouseInput.canvasRef.current
+          : canvasRef.current;
       if (canvas) {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -355,11 +391,11 @@ export default function GameCanvas({
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [mouseInput, inputMethod, isMouseMode, isTouchMode]);
 
   return (
     <div className="flex-1 relative bg-slate-900">
-      {!gesture && (
+      {isGestureMode && !gesture && (
         <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none z-0">
           <div className="text-center">
             <div className="text-2xl mb-2">Waiting for gesture...</div>
@@ -370,7 +406,13 @@ export default function GameCanvas({
         </div>
       )}
 
-      <canvas ref={canvasRef} className="w-full h-full pointer-events-none" />
+      <canvas
+        ref={setCanvasRef}
+        className={`w-full h-full ${
+          isMouseMode || isTouchMode ? "cursor-none" : "pointer-events-none"
+        }`}
+        style={{ touchAction: isTouchMode ? "none" : "auto" }}
+      />
     </div>
   );
 }

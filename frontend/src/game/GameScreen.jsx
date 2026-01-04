@@ -3,6 +3,7 @@ import { useGameState } from "./useGameState";
 import GameCanvas from "./GameCanvas";
 import ControlPanel from "../components/ControlPanel";
 import { useGestureSocket } from "../hooks/useGestureSocker";
+import { useMouseInput } from "../hooks/useMouseInput";
 import { getScoreMessage } from "./getScoreMessage";
 import {
   XCircleIcon,
@@ -14,6 +15,7 @@ import backSound from "../assets/sound/backsound.mp3";
 export default function GameScreen({
   difficulty,
   operation,
+  inputMethod,
   playerName,
   onGameEnd,
 }) {
@@ -23,6 +25,10 @@ export default function GameScreen({
     start: startGesture,
     pause: pauseGesture,
   } = useGestureSocket();
+
+  const canvasRefForMouse = useRef(null);
+  const mouseInput = useMouseInput(inputMethod || "gesture", canvasRefForMouse);
+
   const {
     score,
     timeLeft,
@@ -34,7 +40,7 @@ export default function GameScreen({
     pauseGame,
     handleShoot,
     resetGame,
-  } = useGameState(difficulty, operation, onGameEnd);
+  } = useGameState(difficulty, operation, inputMethod, onGameEnd);
 
   const shootRef = useRef(false);
   const startSentRef = useRef(false);
@@ -54,8 +60,10 @@ export default function GameScreen({
 
   useEffect(() => {
     if (!isPlaying || gameOver) {
-      setIsReloading(false);
-      setReloadProgress(0);
+      const frame = requestAnimationFrame(() => {
+        setIsReloading(false);
+        setReloadProgress(0);
+      });
       if (reloadTimeoutRef.current) {
         clearTimeout(reloadTimeoutRef.current);
         reloadTimeoutRef.current = null;
@@ -64,6 +72,7 @@ export default function GameScreen({
         clearInterval(reloadIntervalRef.current);
         reloadIntervalRef.current = null;
       }
+      return () => cancelAnimationFrame(frame);
     }
   }, [isPlaying, gameOver]);
 
@@ -75,7 +84,7 @@ export default function GameScreen({
       pauseGesture();
       startSentRef.current = false;
     }
-  }, [isPlaying, connected]);
+  }, [isPlaying, connected, startGesture, pauseGesture]);
 
   useEffect(() => {
     if (!audioRef.current) {
@@ -127,70 +136,166 @@ export default function GameScreen({
   }, []);
 
   useEffect(() => {
+    if (inputMethod !== "gesture") return;
+
     if (gesture?.shoot && !shootRef.current && isPlaying && !isReloading) {
       shootRef.current = true;
 
-      setIsReloading(true);
-      setReloadProgress(0);
-
-      if (reloadIntervalRef.current) {
-        clearInterval(reloadIntervalRef.current);
-        reloadIntervalRef.current = null;
-      }
-      if (reloadTimeoutRef.current) {
-        clearTimeout(reloadTimeoutRef.current);
-        reloadTimeoutRef.current = null;
-      }
-
-      if (audioRef.current) {
-        try {
-          const SHOOT_SOUND_START_TIME = 1.5;
-          audioRef.current.currentTime = SHOOT_SOUND_START_TIME;
-          const playPromise = audioRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise.catch((error) => {
-              console.warn("Error playing shoot sound:", error);
-            });
-          }
-        } catch (error) {
-          console.warn("Error playing shoot sound:", error);
-        }
-      }
-
-      if (gesture.x !== null && gesture.y !== null) {
-        const shootX = gesture.x * window.innerWidth;
-        const shootY = gesture.y * window.innerHeight;
-        handleShoot(shootX, shootY);
-      }
-
-      const startTime = Date.now();
-      reloadIntervalRef.current = setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min((elapsed / (RELOAD_TIME * 1000)) * 100, 100);
-        setReloadProgress(progress);
-
-        if (progress >= 100) {
-          if (reloadIntervalRef.current) {
-            clearInterval(reloadIntervalRef.current);
-            reloadIntervalRef.current = null;
-          }
-          setIsReloading(false);
-          setReloadProgress(0);
-        }
-      }, 16);
-
-      reloadTimeoutRef.current = setTimeout(() => {
-        setIsReloading(false);
+      const frameId = requestAnimationFrame(() => {
+        setIsReloading(true);
         setReloadProgress(0);
+
         if (reloadIntervalRef.current) {
           clearInterval(reloadIntervalRef.current);
           reloadIntervalRef.current = null;
         }
-      }, RELOAD_TIME * 1000);
+        if (reloadTimeoutRef.current) {
+          clearTimeout(reloadTimeoutRef.current);
+          reloadTimeoutRef.current = null;
+        }
+
+        if (audioRef.current) {
+          try {
+            const SHOOT_SOUND_START_TIME = 1.5;
+            audioRef.current.currentTime = SHOOT_SOUND_START_TIME;
+            const playPromise = audioRef.current.play();
+            if (playPromise !== undefined) {
+              playPromise.catch((error) => {
+                console.warn("Error playing shoot sound:", error);
+              });
+            }
+          } catch (error) {
+            console.warn("Error playing shoot sound:", error);
+          }
+        }
+
+        if (gesture.x !== null && gesture.y !== null) {
+          const shootX = gesture.x * window.innerWidth;
+          const shootY = gesture.y * window.innerHeight;
+          handleShoot(shootX, shootY);
+        }
+
+        const startTime = Date.now();
+        reloadIntervalRef.current = setInterval(() => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(
+            (elapsed / (RELOAD_TIME * 1000)) * 100,
+            100
+          );
+          setReloadProgress(progress);
+
+          if (progress >= 100) {
+            if (reloadIntervalRef.current) {
+              clearInterval(reloadIntervalRef.current);
+              reloadIntervalRef.current = null;
+            }
+            setIsReloading(false);
+            setReloadProgress(0);
+          }
+        }, 16);
+
+        reloadTimeoutRef.current = setTimeout(() => {
+          setIsReloading(false);
+          setReloadProgress(0);
+          if (reloadIntervalRef.current) {
+            clearInterval(reloadIntervalRef.current);
+            reloadIntervalRef.current = null;
+          }
+        }, RELOAD_TIME * 1000);
+      });
+
+      return () => cancelAnimationFrame(frameId);
     } else if (!gesture?.shoot) {
       shootRef.current = false;
     }
-  }, [gesture, isPlaying, handleShoot, isReloading]);
+  }, [gesture, isPlaying, handleShoot, isReloading, inputMethod]);
+
+  useEffect(() => {
+    if (inputMethod !== "mouse" && inputMethod !== "touch") return;
+    if (!mouseInput) return;
+
+    if (
+      mouseInput.isShooting &&
+      !shootRef.current &&
+      isPlaying &&
+      !isReloading
+    ) {
+      shootRef.current = true;
+
+      const frameId = requestAnimationFrame(() => {
+        setIsReloading(true);
+        setReloadProgress(0);
+
+        if (reloadIntervalRef.current) {
+          clearInterval(reloadIntervalRef.current);
+          reloadIntervalRef.current = null;
+        }
+        if (reloadTimeoutRef.current) {
+          clearTimeout(reloadTimeoutRef.current);
+          reloadTimeoutRef.current = null;
+        }
+
+        if (audioRef.current) {
+          try {
+            const SHOOT_SOUND_START_TIME = 1.5;
+            audioRef.current.currentTime = SHOOT_SOUND_START_TIME;
+            const playPromise = audioRef.current.play();
+            if (playPromise !== undefined) {
+              playPromise.catch((error) => {
+                console.warn("Error playing shoot sound:", error);
+              });
+            }
+          } catch (error) {
+            console.warn("Error playing shoot sound:", error);
+          }
+        }
+
+        const shootX = mouseInput.cursor.x * window.innerWidth;
+        const shootY = mouseInput.cursor.y * window.innerHeight;
+        handleShoot(shootX, shootY);
+
+        const startTime = Date.now();
+        reloadIntervalRef.current = setInterval(() => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(
+            (elapsed / (RELOAD_TIME * 1000)) * 100,
+            100
+          );
+          setReloadProgress(progress);
+
+          if (progress >= 100) {
+            if (reloadIntervalRef.current) {
+              clearInterval(reloadIntervalRef.current);
+              reloadIntervalRef.current = null;
+            }
+            setIsReloading(false);
+            setReloadProgress(0);
+          }
+        }, 16);
+
+        reloadTimeoutRef.current = setTimeout(() => {
+          setIsReloading(false);
+          setReloadProgress(0);
+          if (reloadIntervalRef.current) {
+            clearInterval(reloadIntervalRef.current);
+            reloadIntervalRef.current = null;
+          }
+        }, RELOAD_TIME * 1000);
+      });
+
+      return () => cancelAnimationFrame(frameId);
+    } else if (mouseInput && !mouseInput.isShooting) {
+      shootRef.current = false;
+    }
+  }, [
+    mouseInput,
+    mouseInput?.isShooting,
+    mouseInput?.cursor,
+    isPlaying,
+    handleShoot,
+    isReloading,
+    inputMethod,
+  ]);
 
   return (
     <div className="w-screen h-screen flex flex-col relative overflow-hidden bg-slate-900">
@@ -285,9 +390,12 @@ export default function GameScreen({
 
       <GameCanvas
         gesture={gesture}
+        mouseInput={mouseInput}
+        inputMethod={inputMethod}
         answers={answers}
         isPlaying={isPlaying}
         isReloading={isReloading}
+        gameCanvasRef={canvasRefForMouse}
       />
 
       {!isPlaying && !gameOver && currentQuestion && (
