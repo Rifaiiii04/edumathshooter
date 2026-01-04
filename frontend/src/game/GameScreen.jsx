@@ -40,7 +40,7 @@ export default function GameScreen({
     pauseGame,
     handleShoot,
     resetGame,
-  } = useGameState(difficulty, operation, inputMethod, onGameEnd);
+  } = useGameState(difficulty, operation, inputMethod);
 
   const shootRef = useRef(false);
   const startSentRef = useRef(false);

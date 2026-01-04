@@ -1,16 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { generateMathQuestion } from "./mathGenerator";
 
-export function useGameState(difficulty, operation, inputMethod, onGameEnd) {
+export function useGameState(difficulty, operation, inputMethod) {
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
-  
+
   const animationFrameRef = useRef(null);
-  const lastTimeRef = useRef(Date.now());
+  const lastTimeRef = useRef(null);
   const answerIdCounterRef = useRef(0);
   const lastShootTimeRef = useRef(0);
 
@@ -24,9 +24,11 @@ export function useGameState(difficulty, operation, inputMethod, onGameEnd) {
       const radius = 150;
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
-      
-      const baseSpeed = difficulty === "easy" ? 1 : difficulty === "medium" ? 1.5 : 2;
-      const speedMultiplier = (inputMethod === "mouse" || inputMethod === "touch") ? 1.5 : 1;
+
+      const baseSpeed =
+        difficulty === "easy" ? 12.5 : difficulty === "medium" ? 18.75 : 25;
+      const speedMultiplier =
+        inputMethod === "mouse" || inputMethod === "touch" ? 1.5 : 1;
       const speed = baseSpeed * speedMultiplier;
       const angleSpeed = (Math.random() - 0.5) * 0.02;
 
@@ -46,7 +48,7 @@ export function useGameState(difficulty, operation, inputMethod, onGameEnd) {
     });
 
     setAnswers(newAnswers);
-  }, [difficulty, operation]);
+  }, [difficulty, operation, inputMethod]);
 
   const startGame = useCallback(() => {
     if (currentQuestion === null) {
@@ -72,59 +74,88 @@ export function useGameState(difficulty, operation, inputMethod, onGameEnd) {
     return distance < hitRadius;
   }, []);
 
-  const handleShoot = useCallback((shootX, shootY) => {
-    if (!isPlaying || !currentQuestion) return;
+  const handleShoot = useCallback(
+    (shootX, shootY) => {
+      if (!isPlaying || !currentQuestion) return;
 
-    const now = Date.now();
-    if (now - lastShootTimeRef.current < 500) {
-      return;
-    }
-    lastShootTimeRef.current = now;
-
-    let hitDetected = false;
-    let hitAnswer = null;
-    
-    for (let i = 0; i < answers.length; i++) {
-      const answer = answers[i];
-      if (checkCollision(shootX, shootY, answer)) {
-        hitDetected = true;
-        hitAnswer = answer;
-        break;
+      const now = Date.now();
+      if (now - lastShootTimeRef.current < 500) {
+        return;
       }
-    }
-    
-    if (hitDetected && hitAnswer) {
-      setAnswers((prevAnswers) => {
-        return prevAnswers.map((answer) => {
-          if (answer.id === hitAnswer.id) {
-            return { ...answer, isShot: true };
-          }
-          return answer;
+      lastShootTimeRef.current = now;
+
+      let hitDetected = false;
+      let hitAnswer = null;
+
+      for (let i = 0; i < answers.length; i++) {
+        const answer = answers[i];
+        if (checkCollision(shootX, shootY, answer)) {
+          hitDetected = true;
+          hitAnswer = answer;
+          break;
+        }
+      }
+
+      if (hitDetected && hitAnswer) {
+        setAnswers((prevAnswers) => {
+          return prevAnswers.map((answer) => {
+            if (answer.id === hitAnswer.id) {
+              return { ...answer, isShot: true };
+            }
+            return answer;
+          });
         });
-      });
-      
-      if (hitAnswer.isCorrect) {
-        const points = difficulty === "easy" ? 10 : difficulty === "medium" ? 20 : 30;
-        setScore((prev) => prev + points);
-        setTimeout(() => {
-          generateNewQuestion();
-        }, 300);
-      } else {
-        const penalty = difficulty === "easy" ? 5 : difficulty === "medium" ? 10 : 15;
-        setScore((prev) => Math.max(0, prev - penalty));
+
+        if (hitAnswer.isCorrect) {
+          const points =
+            difficulty === "easy" ? 10 : difficulty === "medium" ? 20 : 30;
+          setScore((prev) => prev + points);
+          setTimeout(() => {
+            generateNewQuestion();
+          }, 300);
+        } else {
+          const penalty =
+            difficulty === "easy" ? 5 : difficulty === "medium" ? 10 : 15;
+          setScore((prev) => Math.max(0, prev - penalty));
+
+          setTimeout(() => {
+            setAnswers((prevAnswers) => {
+              return prevAnswers.map((answer) => {
+                if (answer.id === hitAnswer.id && !answer.isCorrect) {
+                  return { ...answer, isShot: false };
+                }
+                return answer;
+              });
+            });
+          }, 1500);
+        }
       }
-    }
-    
-    if (!hitDetected) {
-      const distances = answers.map(a => {
-        const dx = shootX - a.x;
-        const dy = shootY - a.y;
-        return Math.sqrt(dx * dx + dy * dy);
-      });
-      const minDistance = Math.min(...distances);
-      console.log(`Shoot at (${shootX.toFixed(1)}, ${shootY.toFixed(1)}), closest answer distance: ${minDistance.toFixed(1)}, radius: ${answers[0]?.radius || 40}`);
-    }
-  }, [isPlaying, currentQuestion, answers, checkCollision, difficulty, generateNewQuestion]);
+
+      if (!hitDetected) {
+        const distances = answers.map((a) => {
+          const dx = shootX - a.x;
+          const dy = shootY - a.y;
+          return Math.sqrt(dx * dx + dy * dy);
+        });
+        const minDistance = Math.min(...distances);
+        console.log(
+          `Shoot at (${shootX.toFixed(1)}, ${shootY.toFixed(
+            1
+          )}), closest answer distance: ${minDistance.toFixed(1)}, radius: ${
+            answers[0]?.radius || 40
+          }`
+        );
+      }
+    },
+    [
+      isPlaying,
+      currentQuestion,
+      answers,
+      checkCollision,
+      difficulty,
+      generateNewQuestion,
+    ]
+  );
 
   useEffect(() => {
     if (!isPlaying || gameOver) return;
@@ -222,4 +253,3 @@ export function useGameState(difficulty, operation, inputMethod, onGameEnd) {
     resetGame,
   };
 }
-
