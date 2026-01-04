@@ -3,11 +3,12 @@ import { generateMathQuestion } from "./mathGenerator";
 
 export function useGameState(difficulty, operation, inputMethod) {
   const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(60);
+  const [timeLeft, setTimeLeft] = useState(20);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+  const [health, setHealth] = useState(6);
 
   const animationFrameRef = useRef(null);
   const lastTimeRef = useRef(null);
@@ -17,6 +18,7 @@ export function useGameState(difficulty, operation, inputMethod) {
   const generateNewQuestion = useCallback(() => {
     const question = generateMathQuestion(difficulty, operation);
     setCurrentQuestion(question);
+    setTimeLeft(20);
 
     const newAnswers = question.options.map((value, index) => {
       const id = answerIdCounterRef.current++;
@@ -51,14 +53,15 @@ export function useGameState(difficulty, operation, inputMethod) {
   }, [difficulty, operation, inputMethod]);
 
   const startGame = useCallback(() => {
-    if (currentQuestion === null) {
-      setScore(0);
-      setTimeLeft(60);
-      setGameOver(false);
-      generateNewQuestion();
-    }
     if (!gameOver) {
       setIsPlaying(true);
+    }
+    if (currentQuestion === null) {
+      setScore(0);
+      setTimeLeft(20);
+      setGameOver(false);
+      setHealth(6);
+      generateNewQuestion();
     }
   }, [currentQuestion, generateNewQuestion, gameOver]);
 
@@ -114,9 +117,14 @@ export function useGameState(difficulty, operation, inputMethod) {
             generateNewQuestion();
           }, 300);
         } else {
-          const penalty =
-            difficulty === "easy" ? 5 : difficulty === "medium" ? 10 : 15;
-          setScore((prev) => Math.max(0, prev - penalty));
+          setHealth((prev) => {
+            const newHealth = Math.max(0, prev - 0.5);
+            if (newHealth <= 0) {
+              setGameOver(true);
+              setIsPlaying(false);
+            }
+            return newHealth;
+          });
 
           setTimeout(() => {
             setAnswers((prevAnswers) => {
@@ -216,22 +224,30 @@ export function useGameState(difficulty, operation, inputMethod) {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          setGameOver(true);
-          setIsPlaying(false);
-          return 0;
+          setHealth((prevHealth) => {
+            const newHealth = Math.max(0, prevHealth - 1);
+            if (newHealth <= 0) {
+              setGameOver(true);
+              setIsPlaying(false);
+            }
+            return newHealth;
+          });
+          generateNewQuestion();
+          return 20;
         }
         return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isPlaying, gameOver]);
+  }, [isPlaying, gameOver, generateNewQuestion]);
 
   const resetGame = useCallback(() => {
     setIsPlaying(false);
     setGameOver(false);
     setScore(0);
-    setTimeLeft(60);
+    setTimeLeft(20);
+    setHealth(6);
     setCurrentQuestion(null);
     setAnswers([]);
     answerIdCounterRef.current = 0;
@@ -247,6 +263,7 @@ export function useGameState(difficulty, operation, inputMethod) {
     answers,
     isPlaying,
     gameOver,
+    health,
     startGame,
     pauseGame,
     handleShoot,

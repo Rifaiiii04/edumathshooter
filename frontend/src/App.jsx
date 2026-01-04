@@ -1,4 +1,5 @@
 import { useState } from "react";
+import LandingPage from "./components/LandingPage";
 import DifficultySelect from "./components/DifficultySelect";
 import PlayerForm from "./components/PlayerForm";
 import InputMethodSelect from "./components/InputMethodSelect";
@@ -7,7 +8,7 @@ import InteractiveTutorial from "./components/InteractiveTutorial";
 import GameScreen from "./game/GameScreen";
 
 export default function App() {
-  const [step, setStep] = useState("difficulty");
+  const [step, setStep] = useState("landing");
   const [difficulty, setDifficulty] = useState(null);
   const [operation, setOperation] = useState(null);
   const [inputMethod, setInputMethod] = useState(null);
@@ -49,7 +50,7 @@ export default function App() {
   };
 
   const handleGameEnd = () => {
-    setStep("difficulty");
+    setStep("landing");
     setDifficulty(null);
     setOperation(null);
     setInputMethod(null);
@@ -57,19 +58,60 @@ export default function App() {
     setShowTutorial(true);
   };
 
+  const handleGetStarted = () => {
+    setStep("difficulty");
+  };
+
+  const handleBackToLanding = () => {
+    setStep("landing");
+  };
+
+  const handleBackToDifficulty = () => {
+    setStep("difficulty");
+  };
+
+  const handleBackToPlayerForm = () => {
+    setStep("playerForm");
+  };
+
+  if (step === "landing") {
+    return <LandingPage onGetStarted={handleGetStarted} />;
+  }
+
   if (step === "difficulty") {
-    return <DifficultySelect onSelect={handleDifficultySelect} />;
+    return (
+      <DifficultySelect
+        onSelect={handleDifficultySelect}
+        onBack={handleBackToLanding}
+      />
+    );
   }
 
   if (step === "playerForm") {
-    return <PlayerForm onSubmit={handlePlayerSubmit} />;
+    return (
+      <PlayerForm
+        onSubmit={handlePlayerSubmit}
+        onBack={handleBackToDifficulty}
+      />
+    );
   }
 
   if (step === "input-method") {
-    return <InputMethodSelect onSelect={handleInputMethodSelect} />;
+    return (
+      <InputMethodSelect
+        onSelect={handleInputMethodSelect}
+        onBack={handleBackToPlayerForm}
+      />
+    );
   }
 
   if (step === "tutorial-confirm") {
+    if (inputMethod !== "gesture") {
+      setShowTutorial(false);
+      setTutorialMode(false);
+      setStep("game");
+      return null;
+    }
     return (
       <TutorialConfirmation
         onStartTutorial={handleStartTutorial}
@@ -78,7 +120,7 @@ export default function App() {
     );
   }
 
-  if (step === "tutorial" && tutorialMode) {
+  if (step === "tutorial" && tutorialMode && inputMethod === "gesture") {
     return <InteractiveTutorial onComplete={handleTutorialComplete} />;
   }
 
@@ -90,6 +132,7 @@ export default function App() {
         inputMethod={inputMethod}
         playerName={playerData?.name || "Player"}
         onGameEnd={handleGameEnd}
+        onBackToDifficulty={handleBackToDifficulty}
       />
     );
   }

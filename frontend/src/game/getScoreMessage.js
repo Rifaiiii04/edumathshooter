@@ -8,28 +8,28 @@ export function getScoreMessage(score, difficulty) {
   let title, message, Icon, color;
 
   if (score >= perfectThreshold) {
-    title = "SELAMAT! LUAR BIASA!";
-    message = `Selamat! Kamu mendapatkan skor ${score} poin! Kamu benar-benar hebat dalam matematika!`;
+    title = "CONGRATULATIONS! AMAZING!";
+    message = `Congratulations! You scored ${score} points! You're truly excellent at mathematics!`;
     Icon = TrophyIcon;
     color = "text-yellow-400";
   } else if (score >= excellentThreshold) {
-    title = "SELAMAT! SANGAT BAGUS!";
-    message = `Selamat! Kamu mendapatkan skor ${score} poin! Kamu sangat pandai matematika!`;
+    title = "CONGRATULATIONS! EXCELLENT!";
+    message = `Congratulations! You scored ${score} points! You're very good at mathematics!`;
     Icon = StarIcon;
     color = "text-purple-400";
   } else if (score >= baseThreshold) {
-    title = "SELAMAT! BAGUS!";
-    message = `Selamat! Kamu mendapatkan skor ${score} poin! Kamu berhasil menyelesaikan dengan baik!`;
+    title = "CONGRATULATIONS! GREAT!";
+    message = `Congratulations! You scored ${score} points! You did well!`;
     Icon = CheckCircleIcon;
     color = "text-green-400";
   } else if (score >= baseThreshold * 0.5) {
-    title = "TETAP SEMANGAT!";
-    message = `Kamu mendapatkan skor ${score} poin. Kamu sudah berusaha dengan baik! Terus latih kemampuanmu!`;
+    title = "KEEP GOING!";
+    message = `You scored ${score} points. You did your best! Keep practicing to improve your skills!`;
     Icon = FireIcon;
     color = "text-blue-400";
   } else {
-    title = "TERUS BELAJAR!";
-    message = `Kamu mendapatkan skor ${score} poin. Jangan menyerah, terus berlatih dan tingkatkan kemampuanmu!`;
+    title = "KEEP LEARNING!";
+    message = `You scored ${score} points. Don't give up, keep practicing and improve your skills!`;
     Icon = BookOpenIcon;
     color = "text-gray-400";
   }

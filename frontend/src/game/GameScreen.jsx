@@ -8,6 +8,7 @@ import { getScoreMessage } from "./getScoreMessage";
 import {
   XCircleIcon,
   ExclamationTriangleIcon,
+  HeartIcon,
 } from "@heroicons/react/24/solid";
 import gunShootSound from "../assets/sound/gunshoot.mp3";
 import backSound from "../assets/sound/backsound.mp3";
@@ -18,6 +19,7 @@ export default function GameScreen({
   inputMethod,
   playerName,
   onGameEnd,
+  onBackToDifficulty,
 }) {
   const {
     gesture,
@@ -36,6 +38,7 @@ export default function GameScreen({
     answers,
     isPlaying,
     gameOver,
+    health,
     startGame,
     pauseGame,
     handleShoot,
@@ -48,15 +51,65 @@ export default function GameScreen({
   const backSoundRef = useRef(null);
   const [isReloading, setIsReloading] = useState(false);
   const [reloadProgress, setReloadProgress] = useState(0);
+  const [countdown, setCountdown] = useState(null);
   const reloadTimeoutRef = useRef(null);
   const reloadIntervalRef = useRef(null);
+  const countdownIntervalRef = useRef(null);
+  const hasStartedCountdownRef = useRef(false);
   const RELOAD_TIME = 1.5;
 
+  const isCountdownActiveRef = useRef(false);
+
   useEffect(() => {
-    if (currentQuestion === null && !isPlaying && !gameOver) {
-      startGame();
+    if (currentQuestion === null && !isPlaying && !gameOver && countdown === null && !hasStartedCountdownRef.current && !isCountdownActiveRef.current) {
+      hasStartedCountdownRef.current = true;
+      isCountdownActiveRef.current = true;
+      setCountdown(5);
     }
-  }, [currentQuestion, isPlaying, gameOver, startGame]);
+  }, [currentQuestion, isPlaying, gameOver, countdown]);
+
+  useEffect(() => {
+    if (countdown === null) {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      return;
+    }
+
+    if (countdown === 0) {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      isCountdownActiveRef.current = false;
+      hasStartedCountdownRef.current = true;
+      setCountdown(null);
+      requestAnimationFrame(() => {
+        startGame();
+      });
+      return;
+    }
+
+    if (countdown > 0) {
+      if (countdownIntervalRef.current) {
+        return;
+      }
+      
+      countdownIntervalRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev === null || prev <= 1) {
+            if (countdownIntervalRef.current) {
+              clearInterval(countdownIntervalRef.current);
+              countdownIntervalRef.current = null;
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+  }, [countdown, startGame]);
 
   useEffect(() => {
     if (!isPlaying || gameOver) {
@@ -77,6 +130,7 @@ export default function GameScreen({
   }, [isPlaying, gameOver]);
 
   useEffect(() => {
+    if (inputMethod !== "gesture") return;
     if (isPlaying && connected && !startSentRef.current) {
       startGesture();
       startSentRef.current = true;
@@ -84,7 +138,7 @@ export default function GameScreen({
       pauseGesture();
       startSentRef.current = false;
     }
-  }, [isPlaying, connected, startGesture, pauseGesture]);
+  }, [isPlaying, connected, startGesture, pauseGesture, inputMethod]);
 
   useEffect(() => {
     if (!audioRef.current) {
@@ -302,24 +356,89 @@ export default function GameScreen({
       <div className="absolute top-0 left-0 right-0 z-20 bg-slate-900/95 backdrop-blur-md border-b border-white/10">
         <div className="flex justify-between items-center px-6 py-3">
           <div className="text-white">
-            <div className="text-xs opacity-70 mb-0.5">Pemain</div>
+            <div className="text-xs opacity-70 mb-0.5">Player</div>
             <div className="text-lg font-semibold">{playerName}</div>
           </div>
 
           <div className="flex items-center gap-8">
             <div className="text-center">
-              <div className="text-xs opacity-70 mb-0.5 text-white">Skor</div>
+              <div className="text-xs opacity-70 mb-0.5 text-white">Score</div>
               <div className="text-2xl font-bold text-green-400">{score}</div>
             </div>
 
             <div className="text-center">
-              <div className="text-xs opacity-70 mb-0.5 text-white">Waktu</div>
+              <div className="text-xs opacity-70 mb-0.5 text-white">Time</div>
               <div
                 className={`text-2xl font-bold ${
                   timeLeft <= 10 ? "text-red-400" : "text-yellow-400"
                 }`}
               >
                 {timeLeft}s
+              </div>
+            </div>
+
+            <div className="text-center">
+              <div className="text-xs opacity-70 mb-0.5 text-white">Health</div>
+              <div className="flex items-center justify-center gap-1">
+                {[0, 1, 2].map((heartIndex) => {
+                  const heartValue = health - heartIndex * 2;
+                  if (heartValue >= 2) {
+                    return (
+                      <HeartIcon
+                        key={heartIndex}
+                        className="w-5 h-5 sm:w-6 sm:h-6 text-red-500"
+                      />
+                    );
+                  } else if (heartValue >= 1 && heartValue < 2) {
+                    return (
+                      <div key={heartIndex} className="relative w-5 h-5 sm:w-6 sm:h-6">
+                        <HeartIcon className="w-5 h-5 sm:w-6 sm:h-6 text-red-500" />
+                        <div className="absolute inset-0 bg-slate-900/90 flex items-center justify-end pr-0.5 overflow-hidden rounded-full">
+                          <div className="w-2 sm:w-2.5 h-4 sm:h-5 bg-red-500"></div>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <HeartIcon
+                        key={heartIndex}
+                        className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600"
+                      />
+                    );
+                  }
+                })}
+              </div>
+            </div>
+            <div className="text-center sm:hidden">
+              <div className="text-[10px] opacity-70 mb-0.5 text-white">Health</div>
+              <div className="flex items-center justify-center gap-0.5">
+                {[0, 1, 2].map((heartIndex) => {
+                  const heartValue = health - heartIndex * 2;
+                  if (heartValue >= 2) {
+                    return (
+                      <HeartIcon
+                        key={heartIndex}
+                        className="w-4 h-4 text-red-500"
+                      />
+                    );
+                  } else if (heartValue >= 1 && heartValue < 2) {
+                    return (
+                      <div key={heartIndex} className="relative w-4 h-4">
+                        <HeartIcon className="w-4 h-4 text-red-500" />
+                        <div className="absolute inset-0 bg-slate-900/90 flex items-center justify-end pr-0.5 overflow-hidden rounded-full">
+                          <div className="w-1.5 h-3 bg-red-500"></div>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <HeartIcon
+                        key={heartIndex}
+                        className="w-4 h-4 text-gray-600"
+                      />
+                    );
+                  }
+                })}
               </div>
             </div>
           </div>
@@ -345,7 +464,7 @@ export default function GameScreen({
         />
       </div>
 
-      {!connected && (
+      {inputMethod === "gesture" && !connected && (
         <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-20">
           <div className="bg-red-500/90 backdrop-blur-sm rounded-lg px-4 py-2.5 text-white text-sm flex items-center gap-2 shadow-lg">
             <XCircleIcon className="w-4 h-4 flex shrink-0" />
@@ -358,13 +477,26 @@ export default function GameScreen({
           </div>
         </div>
       )}
-      {connected && !gesture && (
+      {inputMethod === "gesture" && connected && !gesture && (
         <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-20">
           <div className="bg-yellow-500/90 backdrop-blur-sm rounded-lg px-4 py-2.5 text-white text-sm flex items-center gap-2 shadow-lg">
             <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0" />
             <span className="text-xs">
-              Menunggu deteksi gesture... Tunjukkan tangan ke kamera
+              Waiting for gesture detection... Show your hand to the camera
             </span>
+          </div>
+        </div>
+      )}
+
+      {countdown !== null && countdown > 0 && (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-40">
+          <div className="text-center">
+            <div className="text-9xl font-bold text-white mb-4 animate-pulse drop-shadow-2xl">
+              {countdown}
+            </div>
+            <div className="text-2xl text-white/80 font-semibold">
+              Get Ready!
+            </div>
           </div>
         </div>
       )}
@@ -410,10 +542,10 @@ export default function GameScreen({
                 Resume
               </button>
               <button
-                onClick={onGameEnd}
-                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-8 py-3 rounded-lg transition-all duration-200 transform hover:scale-105"
+                onClick={onBackToDifficulty || onGameEnd}
+                className="bg-white/10 hover:bg-white/20 text-white font-medium px-8 py-3 rounded-lg transition-all duration-200 w-full border border-white/20"
               >
-                Kembali ke Menu
+                Back to Menu
               </button>
             </div>
           </div>
@@ -440,7 +572,7 @@ export default function GameScreen({
                 </p>
                 <div className="bg-black/30 rounded-xl p-6 mb-6 border border-white/10">
                   <div className="text-sm text-white/60 mb-2">
-                    Skor Akhir Kamu
+                    Your Final Score
                   </div>
                   <div
                     className={`text-5xl font-bold ${scoreMessage.color} mb-2`}
@@ -449,29 +581,38 @@ export default function GameScreen({
                   </div>
                   <div className="text-sm text-white/60">
                     {difficulty === "easy"
-                      ? "Level Mudah"
+                      ? "Easy Level"
                       : difficulty === "medium"
-                      ? "Level Sedang"
-                      : "Level Sulit"}
+                      ? "Medium Level"
+                      : "Hard Level"}
                   </div>
                 </div>
                 <div className="space-y-3">
                   <button
                     onClick={() => {
+                      if (countdownIntervalRef.current) {
+                        clearInterval(countdownIntervalRef.current);
+                        countdownIntervalRef.current = null;
+                      }
+                      setCountdown(null);
+                      hasStartedCountdownRef.current = false;
+                      isCountdownActiveRef.current = false;
                       resetGame();
                       setTimeout(() => {
-                        startGame();
+                        hasStartedCountdownRef.current = true;
+                        isCountdownActiveRef.current = true;
+                        setCountdown(5);
                       }, 300);
                     }}
                     className="bg-green-500 hover:bg-green-600 text-white font-semibold px-8 py-4 rounded-lg transition-all duration-200 w-full transform hover:scale-105 shadow-lg"
                   >
-                    Bermain Kembali
+                    Play Again
                   </button>
                   <button
-                    onClick={onGameEnd}
+                    onClick={onBackToDifficulty || onGameEnd}
                     className="bg-white/10 hover:bg-white/20 text-white font-medium px-8 py-3 rounded-lg transition-all duration-200 w-full border border-white/20"
                   >
-                    Kembali ke Menu
+                    Back to Menu
                   </button>
                 </div>
               </div>

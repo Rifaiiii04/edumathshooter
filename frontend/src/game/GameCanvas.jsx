@@ -245,21 +245,6 @@ export default function GameCanvas({
         ctx.restore();
       }
 
-      if (!gesture) {
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, 10, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(156, 163, 175, 0.5)";
-        ctx.fill();
-
-        ctx.strokeStyle = "rgba(156, 163, 175, 0.8)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, 15, 0, Math.PI * 2);
-        ctx.stroke();
-      }
 
       ctx.restore();
 
